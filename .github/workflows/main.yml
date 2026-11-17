@@ -2,13 +2,13 @@ name: build
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
+    tags: ["v*"]
   pull_request:
   workflow_dispatch:
 
-concurrency:
-  group: build-${{ github.ref }}
-  cancel-in-progress: true
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -19,12 +19,10 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
-
-      - uses: actions/cache@v4
-        with:
-          path: ~\.nuget\packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
-          restore-keys: nuget-${{ runner.os }}-
+          cache: true
+          cache-dependency-path: |
+            src/**/*.csproj
+            tests/**/*.csproj
 
       - name: Build
         run: dotnet build src/MaxiDodPS3 -c Release
@@ -32,20 +30,36 @@ jobs:
       - name: Test
         run: dotnet test tests/MaxiDodPS3.Tests -c Release
 
-      # With the debugger window (use this one to find problems)
-      - name: Publish (debug)
-        run: dotnet publish src/MaxiDodPS3 -c Release -r win-x64 --self-contained false -o publish-debug
+      - name: Publish (with debugger)
+        run: >
+          dotnet publish src/MaxiDodPS3 -c Release -r win-x64
+          --self-contained false -o publish-debug
 
-      # Plain release: debugger not compiled in
-      - name: Publish (release)
-        run: dotnet publish src/MaxiDodPS3 -c Release -r win-x64 --self-contained false -p:EnableDebugger=false -o publish-release
+      - name: Publish (release, no debugger)
+        run: >
+          dotnet publish src/MaxiDodPS3 -c Release -r win-x64
+          --self-contained false -p:EnableDebugger=false -o publish-release
+
+      - name: Zip
+        shell: pwsh
+        run: |
+          Compress-Archive -Path publish-debug/*   -DestinationPath MaxiDodPS3-win-x64-DEBUG.zip
+          Compress-Archive -Path publish-release/* -DestinationPath MaxiDodPS3-win-x64-release.zip
 
       - uses: actions/upload-artifact@v4
         with:
           name: MaxiDodPS3-win-x64-DEBUG
-          path: publish-debug
+          path: MaxiDodPS3-win-x64-DEBUG.zip
 
       - uses: actions/upload-artifact@v4
         with:
           name: MaxiDodPS3-win-x64-release
-          path: publish-release
+          path: MaxiDodPS3-win-x64-release.zip
+
+      - name: GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            MaxiDodPS3-win-x64-DEBUG.zip
+            MaxiDodPS3-win-x64-release.zip
