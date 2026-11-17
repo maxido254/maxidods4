@@ -1,0 +1,59 @@
+name: release
+
+# Push a tag like v0.2.0 to build, test and publish a GitHub Release
+# with both the debugger build and the plain release build attached.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Test
+        run: dotnet test tests/MaxiDodPS3.Tests -c Release
+
+      - name: Publish (with debugger)
+        run: >
+          dotnet publish src/MaxiDodPS3 -c Release -r win-x64
+          --self-contained false -o publish-debug
+
+      - name: Publish (plain release, debugger not compiled in)
+        run: >
+          dotnet publish src/MaxiDodPS3 -c Release -r win-x64
+          --self-contained false -p:EnableDebugger=false -o publish-release
+
+      - name: Zip
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if (-not $tag -or "${{ github.ref_type }}" -ne "tag") { $tag = "dev-${{ github.run_number }}" }
+          Compress-Archive -Path publish-release/* -DestinationPath "MaxiDodPS3-$tag-win-x64.zip"
+          Compress-Archive -Path publish-debug/*   -DestinationPath "MaxiDodPS3-$tag-win-x64-DEBUG.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MaxiDodPS3-zips
+          path: MaxiDodPS3-*.zip
+
+      - name: Create GitHub Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: MaxiDodPS3-*.zip
+          generate_release_notes: true
+          body: |
+            Requires the .NET 8 Desktop Runtime and the ViGEmBus driver.
+            HidHide is recommended to avoid duplicate controllers.
+            Use the `-DEBUG` zip to find problems; the other zip has no debugger window.
