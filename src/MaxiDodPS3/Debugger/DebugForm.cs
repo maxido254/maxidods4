@@ -24,6 +24,8 @@ public sealed class DebugForm : Form
     private readonly Queue<Log.Entry> _pending = new();
     private readonly object _pendLock = new();
     private volatile bool _sweepRunning;
+    private readonly List<GroupBox> _padBoxes = new();
+    private volatile SessionInfo[] _sess = Array.Empty<SessionInfo>();
 
     /// <summary>The X button hides the window (the app keeps running in the tray) unless this is set.</summary>
     public bool AllowClose;
@@ -32,7 +34,7 @@ public sealed class DebugForm : Form
     {
         _bridge = bridge;
         Text = "MaxiDodPS3 debugger (temporary)";
-        Width = 1100; Height = 820;
+        Width = 1100; Height = 860;
         StartPosition = FormStartPosition.CenterScreen;
         KeyPreview = true;
         Font = new Font("Segoe UI", 9f);
@@ -62,9 +64,17 @@ public sealed class DebugForm : Form
         top.Controls.Add(Btn("Clear log", (_, _) => _log.Clear()));
         Controls.Add(top);
 
+        var tabs = new TabControl { Dock = DockStyle.Fill };
+        var tabPads = new TabPage("Controllers (visual test)");
+        var tabDiag = new TabPage("Diagnostics, rumble test and log");
+        tabs.TabPages.Add(tabPads);
+        tabs.TabPages.Add(tabDiag);
+        Controls.Add(tabs);
+        tabs.BringToFront();
+        tabPads.Controls.Add(BuildPadsTab());
+
         var split = new SplitContainer { Dock = DockStyle.Fill, Orientation = Orientation.Horizontal, SplitterDistance = 400 };
-        Controls.Add(split);
-        split.BringToFront();
+        tabDiag.Controls.Add(split);
 
         // ---- top half: environment + pads + rumble test
         var upper = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 1 };
@@ -85,6 +95,57 @@ public sealed class DebugForm : Form
         _log.Font = new Font("Consolas", 9f);
         _log.WordWrap = true;
         split.Panel2.Controls.Add(Boxed("Log (also saved to " + Log.FilePath + ")", _log));
+    }
+
+    /// <summary>One grey controller picture per pad slot. Pressed buttons turn red and fade out after 3 s.</summary>
+    private Control BuildPadsTab()
+    {
+        var root = new Panel { Dock = DockStyle.Fill };
+
+        var head = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 78, Padding = new Padding(6, 4, 6, 0) };
+        head.Controls.Add(new Label
+        {
+            AutoSize = false, Width = 1040, Height = 38,
+            Text = "Press buttons on each pad: a pressed button turns RED and fades out 3 seconds after you let go, so you can test " +
+                   "the other buttons meanwhile. Sticks light up when moved, triggers show their value. The two motor circles turn " +
+                   "red and shake while the pad is told to vibrate (by a game or by the buttons below).",
+        });
+        head.Controls.Add(Btn("Rumble large motor (1.5 s)", (_, _) => RumbleAll(255, 0)));
+        head.Controls.Add(Btn("Rumble small motor (1.5 s)", (_, _) => RumbleAll(0, 255)));
+        head.Controls.Add(Btn("Rumble both (1.5 s)", (_, _) => RumbleAll(255, 255)));
+
+        var flow = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoScroll = true, Padding = new Padding(6) };
+        int n = Math.Clamp(_bridge.Config.MaxPads, 1, 8);
+        for (int i = 0; i < n; i++)
+        {
+            int slot = i;
+            var view = new PadView(() => Array.Find(_sess, x => x.Slot == slot), _bridge.Config) { Dock = DockStyle.Fill };
+            var box = new GroupBox { Text = $"Pad {i + 1}: (empty)", Width = 450, Height = 345, Margin = new Padding(6) };
+            box.Controls.Add(view);
+            flow.Controls.Add(box);
+            _padBoxes.Add(box);
+        }
+
+        root.Controls.Add(flow);
+        root.Controls.Add(head);
+        flow.BringToFront();
+        return root;
+    }
+
+    /// <summary>Direct rumble on every running pad, so you can watch the motor circles light up.</summary>
+    private async void RumbleAll(byte large, byte small)
+    {
+        var pads = _sess.Where(x => x.Pad != null).Select(x => x.Pad!).ToList();
+        if (pads.Count == 0) { Say("No pad is running in the bridge."); return; }
+        try
+        {
+            foreach (var p in pads) p.SetRumble(large, small);
+            await Task.Delay(1500);
+        }
+        finally
+        {
+            foreach (var p in pads) { try { p.SetRumble(0, 0); } catch { } }
+        }
     }
 
     private Control BuildRumblePanel()
@@ -181,6 +242,13 @@ public sealed class DebugForm : Form
 
         var mgr = _bridge.Manager;
         var sessions = mgr?.Sessions ?? Array.Empty<SessionInfo>();
+        _sess = sessions;
+        for (int i = 0; i < _padBoxes.Count; i++)
+        {
+            var si = Array.Find(sessions, x => x.Slot == i);
+            string title = si == null ? $"Pad {i + 1}: (empty)" : $"Pad {i + 1}: {si.Name} ({si.Transport}, {si.Mode})";
+            if (_padBoxes[i].Text != title) _padBoxes[i].Text = title;
+        }
 
         // keep the pad picker in step with the running pads
         string? selected = _padPick.SelectedItem as string;

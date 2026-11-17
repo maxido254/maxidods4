@@ -21,6 +21,8 @@ Builds include a debugger so you can find the problem first and send me a screen
 2. **Through XInput** (the path a game uses)
 3. **Sweep all write methods** (tells you which letters you felt)
 
+The **Controllers** tab shows a grey picture of each connected pad (up to `MaxPads`, for local multiplayer). A pressed button turns **red** and fades out 3 seconds after release, so you can test the others meanwhile; sticks and triggers react too, and the two motor circles turn red and shake while the pad is told to vibrate. Three buttons there rumble the large motor, the small motor, or both on every pad.
+
 Press **F12** or the **Screenshot** button: it saves a PNG to `Pictures\MaxiDodPS3`, copies it to the clipboard and opens its folder. **Save report** writes everything as text.
 
 **To remove the debugger:** in `src/MaxiDodPS3/MaxiDodPS3.csproj` set `<EnableDebugger>false</EnableDebugger>` (or build with `-p:EnableDebugger=false`; CI already publishes a `-release` artifact without it). To delete it for good, also delete the `src/MaxiDodPS3/Debugger/` folder.
