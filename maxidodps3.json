@@ -1,0 +1,68 @@
+{
+  // ===== What each kind of controller becomes ============================================
+  // "x360"   = virtual Xbox 360 pad (XInput)
+  // "ds4"    = virtual DualShock 4 pad (not XInput)
+  // "native" = leave this kind alone: nothing virtual is created and nothing is hidden
+  "Ps3Mode": "x360",
+  "Ds4Mode": "x360",
+  "DualSenseMode": "x360",
+
+  // ===== Duplicate prevention ============================================================
+  // Hide the real pad from games (needs the HidHide driver) so a game never sees both the
+  // real controller and its virtual copy. Turn off only if you know you do not need it.
+  "HideSourcePads": true,
+
+  // Full path to HidHideCLI.exe. Leave empty to look in the default install folder.
+  "HidHideCliPath": "",
+
+  // Treat one pad seen over both USB and Bluetooth (same MAC-style serial) as a single pad.
+  // Turn off if two different clone pads share a serial and one of them is being ignored.
+  "DedupeBySerial": true,
+
+  // ===== General =========================================================================
+  // 1-4 pads at once
+  "MaxPads": 4,
+
+  // Fraction of stick travel to ignore (0.0 - 0.45). Full range is preserved outside it.
+  "StickDeadzone": 0.0,
+
+  // DS4 output: L2/R2 analog value (0-255) that counts as the digital trigger click.
+  "TriggerClickThreshold": 100,
+
+  // "slot" shows the player number on the lightbar / LEDs, "off" turns them off.
+  "Lightbar": "slot",
+
+  // ===== Rumble (run "MaxiDodPS3 rumble-test" to find the right values for a clone) ======
+  // DS3 only: the weak motor is on/off. It switches on when the game's small-motor value reaches this.
+  "SmallMotorThreshold": 40,
+
+  // Multipliers for the game's motor values (0.0 - 2.0).
+  "LargeMotorScale": 1.0,
+  "SmallMotorScale": 1.0,
+
+  // "refresh" re-sends rumble while a motor is on (fixes clones that stop or ignore a single write); "latch" sends once.
+  "RumbleMode": "refresh",
+  "RumbleRefreshMs": 100,
+
+  // DS3 only: motor duration byte. 255 = until changed. Some clones need a smaller value such as 50.
+  "RumbleDuration": 255,
+
+  // Some clones wire the two motors the other way round.
+  "SwapMotors": false,
+
+  // DS3 only: set false if a clone misbehaves when LED data is in the rumble report.
+  "LedInReport": true,
+
+  // "auto" (normal write, then HidD_SetOutputReport if that fails), "stream", or "setoutput".
+  "WriteMethod": "auto",
+
+  // DS4 only: "valid data" flags byte as a decimal number. 7 = rumble+lightbar+blink. Some clones want 255.
+  "Ds4OutputFlags": 7,
+
+  // DualSense only: set the "haptics select" bit. Most firmware needs it; a few clones want it off.
+  "Ds5HapticsSelect": true,
+
+  // ===== Clone pads under another ID ======================================================
+  // "VID:PID:kind" in hex, kind = ps3, ds4 or ds5 (ps3 if omitted). Example: "1234:ABCD:ds4"
+  "ExtraDevices": []
+}

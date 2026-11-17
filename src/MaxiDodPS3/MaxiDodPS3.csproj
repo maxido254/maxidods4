@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Windows (tray) app. The command-line tools (doctor, list, pair, rumble-test, unhide) attach to the console you start them from. -->
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>MaxiDodPS3</RootNamespace>
+    <AssemblyName>MaxiDodPS3</AssemblyName>
+    <Version>0.2.0</Version>
+    <Description>PS3 controller bridge: USB and wireless pads as virtual X360/DS4 with rumble. Runs in the tray.</Description>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <!--
+    DEBUGGER SWITCH
+    true  = the Debugger/ folder is built in: live log, pad monitor, rumble tests, screenshot button.
+    false = the debugger is not compiled at all and the tray app is the plain release.
+    Set it to false (or build with  -p:EnableDebugger=false ) when you are done finding the issue.
+    To remove it for good, also delete the Debugger/ folder.
+  -->
+  <PropertyGroup>
+    <EnableDebugger Condition="'$(EnableDebugger)' == ''">true</EnableDebugger>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(EnableDebugger)' == 'true'">
+    <DefineConstants>$(DefineConstants);DEBUGGER</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(EnableDebugger)' != 'true'">
+    <Compile Remove="Debugger\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="HidSharp" Version="2.1.0" />
+    <PackageReference Include="Nefarius.ViGEm.Client" Version="1.21.256" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\maxidodps3.json" Link="maxidodps3.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
