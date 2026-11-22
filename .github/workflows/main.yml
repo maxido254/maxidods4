@@ -62,6 +62,4 @@ jobs:
         with:
           tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('v1.0.{0}', github.run_number) }}
           name: MaxiDodPS3 ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('v1.0.{0}', github.run_number) }}
-          files: |
-            MaxiDodPS3-win-x64-DEBUG.zip
-            MaxiDodPS3-win-x64-release.zip
+          files: MaxiDodPS3-win-x64-release.zip
