@@ -30,31 +30,35 @@ jobs:
       - name: Test
         run: dotnet test tests/MaxiDodPS3.Tests -c Release
 
-      - name: Publish (with debugger)
+      - name: Publish the app (release, no debugger, self-contained)
         run: >
           dotnet publish src/MaxiDodPS3 -c Release -r win-x64
-          --self-contained false -o publish-debug
+          --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableDebugger=false -o publish-release
 
-      - name: Publish (release, no debugger)
-        run: >
-          dotnet publish src/MaxiDodPS3 -c Release -r win-x64
-          --self-contained false -p:EnableDebugger=false -o publish-release
-
-      - name: Zip
-        shell: pwsh
+      - name: Install WiX Toolset
+        shell: bash
         run: |
-          Compress-Archive -Path publish-debug/*   -DestinationPath MaxiDodPS3-win-x64-DEBUG.zip
-          Compress-Archive -Path publish-release/* -DestinationPath MaxiDodPS3-win-x64-release.zip
+          dotnet tool install --global wix --version 5.0.2
+          echo "$USERPROFILE\\.dotnet\\tools" >> "$GITHUB_PATH"
+
+      - name: Build the MSI installer
+        shell: bash
+        run: |
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          mkdir -p build
+          cp installer/Product.wxs build/Product.wxs
+          cp -r publish-release build/app
+          ls -la build/app
+          cd build
+          sed -i "s/__VERSION__/0.2.${GITHUB_RUN_NUMBER}/" Product.wxs
+          wix build -arch x64 -o MaxiDodPS3-Setup.msi Product.wxs
+          ls -la
 
       - uses: actions/upload-artifact@v4
         with:
-          name: MaxiDodPS3-win-x64-DEBUG
-          path: MaxiDodPS3-win-x64-DEBUG.zip
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: MaxiDodPS3-win-x64-release
-          path: MaxiDodPS3-win-x64-release.zip
+          name: MaxiDodPS3-Setup
+          path: build/MaxiDodPS3-Setup.msi
 
       - name: GitHub Release
         if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
@@ -62,4 +66,5 @@ jobs:
         with:
           tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('v1.0.{0}', github.run_number) }}
           name: MaxiDodPS3 ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('v1.0.{0}', github.run_number) }}
-          files: MaxiDodPS3-win-x64-release.zip
+          body: MaxiDodPS3 for Windows. Download MaxiDodPS3-Setup.msi and open it to install. Install the ViGEmBus driver first if you do not have it.
+          files: build/MaxiDodPS3-Setup.msi

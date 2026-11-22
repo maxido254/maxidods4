@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- MaxiDodPS3 installer (WiX Toolset v5). __VERSION__ is filled in by the build workflow. -->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="MaxiDodPS3" Manufacturer="Maxido Entertainment" Version="__VERSION__"
+           UpgradeCode="B7D1C6F2-5E0A-4C9B-8F3D-2A6E9C41D7A5" Scope="perMachine" Language="1033">
+
+    <SummaryInformation Description="MaxiDodPS3: PS3, PS4 and PS5 controllers as virtual Xbox 360 / DualShock 4 pads. Runs in the tray." />
+    <MajorUpgrade DowngradeErrorMessage="A newer version of MaxiDodPS3 is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Property Id="ARPCOMMENTS" Value="By Maxido Entertainment" />
+
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="INSTALLFOLDER" Name="MaxiDodPS3" />
+    </StandardDirectory>
+
+    <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
+      <Component Id="AppExe" Guid="*">
+        <File Id="AppExeFile" Source="app\MaxiDodPS3.exe" KeyPath="yes">
+          <Shortcut Id="StartMenuShortcut" Directory="ProgramMenuFolder" Name="MaxiDodPS3"
+                    Description="PS3 / PS4 / PS5 controller bridge" WorkingDirectory="INSTALLFOLDER" />
+          <Shortcut Id="DesktopShortcut" Directory="DesktopFolder" Name="MaxiDodPS3"
+                    Description="PS3 / PS4 / PS5 controller bridge" WorkingDirectory="INSTALLFOLDER" />
+        </File>
+      </Component>
+      <Files Include="app\**">
+        <Exclude Files="app\MaxiDodPS3.exe" />
+        <Exclude Files="app\*.pdb" />
+      </Files>
+    </ComponentGroup>
+
+    <Feature Id="Main" Title="MaxiDodPS3" Level="1">
+      <ComponentGroupRef Id="AppFiles" />
+    </Feature>
+  </Package>
+</Wix>
