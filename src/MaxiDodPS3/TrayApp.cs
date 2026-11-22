@@ -9,6 +9,24 @@ namespace MaxiDodPS3;
 /// </summary>
 public sealed class TrayApp : ApplicationContext
 {
+    private static void AddContact(ContextMenuStrip menu, string text, Color color, string letter, string url)
+    {
+        var bmp = new Bitmap(16, 16);
+        using (var g = Graphics.FromImage(bmp))
+        {
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            using var b = new SolidBrush(color);
+            g.FillEllipse(b, 0, 0, 15, 15);
+            using var f = new Font("Segoe UI", 7.5f, FontStyle.Bold);
+            var sz = g.MeasureString(letter, f);
+            g.DrawString(letter, f, Brushes.White, (16 - sz.Width) / 2f, (16 - sz.Height) / 2f);
+        }
+        menu.Items.Add(text, bmp, (_, _) =>
+        {
+            try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); } catch { }
+        });
+    }
+
     private readonly Bridge _bridge;
     private readonly NotifyIcon _tray;
     private readonly System.Windows.Forms.Timer _tick;
@@ -42,6 +60,12 @@ public sealed class TrayApp : ApplicationContext
         menu.Items.Add("Set up wireless DS3 (Bluetooth)...", null, (_, _) => SetupBluetooth());
         menu.Items.Add("Pair a DS3 (plug it in by USB first)", null, (_, _) => PairDs3());
         menu.Items.Add("Open log folder", null, (_, _) => OpenLogFolder());
+        menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add("maxidoizooh254 (author and publisher)").Enabled = false;
+        AddContact(menu, "WhatsApp  +254 115 710 055", Color.FromArgb(37, 211, 102), "W", "https://wa.me/254115710055");
+        AddContact(menu, "Instagram  maxtech_058", Color.FromArgb(225, 48, 108), "I", "https://www.instagram.com/maxtech_058");
+        AddContact(menu, "TikTok  @maxtech_058", Color.FromArgb(20, 20, 20), "T", "https://www.tiktok.com/@maxtech_058");
+        AddContact(menu, "YouTube  @MaxidoEnt", Color.FromArgb(255, 0, 0), "Y", "https://www.youtube.com/@MaxidoEnt");
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Exit", null, (_, _) => ExitThread());
         menu.Opening += (_, _) => _startup.Checked = Startup.IsEnabled();
