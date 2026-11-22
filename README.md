@@ -38,6 +38,10 @@ Press **F12** or the **Screenshot** button: it saves a PNG to `Pictures\MaxiDodP
 - **Clone pads:** extra VID:PID entries with a pad kind, plus tunable rumble methods and a `rumble-test` tool that finds the one your pad accepts
 - `doctor` (read-only check), `pair` (point a USB DS3 at your PC's Bluetooth radio), `unhide` (undo hiding)
 
+## Wireless DS3: built-in Bluetooth setup
+
+A DS3 does not use the standard Bluetooth profiles, so Windows needs a small profile driver ([BthPS3](https://github.com/nefarius/BthPS3), BSD-3-Clause). MaxiDodPS3 sets it up for you: tray icon > **Set up wireless DS3 (Bluetooth)...** (or run `MaxiDodPS3.exe setup-bluetooth`). It makes a **System Restore point**, downloads the official installer from BthPS3's own GitHub page, and installs it after one Windows admin prompt. Then plug each DS3 in by USB, choose **Pair a DS3** in the tray menu, unplug it and press the PS button. BthPS3 sits on top of the Microsoft Bluetooth stack and does not replace the radio's own driver. Needs Bluetooth 2.0 + EDR or newer. Not tested here on real hardware: if setup fails, the restore point undoes it.
+
 ## Does it corrupt Bluetooth drivers?
 
 No. MaxiDodPS3 is a normal user-mode program. It never installs, replaces or modifies any driver, and it only reads your Bluetooth radio address. The old tools that broke Bluetooth did so by swapping the radio's driver; this does not.

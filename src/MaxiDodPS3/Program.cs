@@ -123,6 +123,12 @@ switch (cmd)
         return n > 0 ? 0 : 1;
     }
 
+    case "setup-bluetooth":
+    {
+        int code = BluetoothSetup.RunAsync(Console.WriteLine).GetAwaiter().GetResult();
+        return code == 3010 ? 0 : code;
+    }
+
     case "run":
         break;
 

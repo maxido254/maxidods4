@@ -39,6 +39,8 @@ public sealed class TrayApp : ApplicationContext
         menu.Items.Add("Open debugger", null, (_, _) => ShowDebugger());
 #endif
         menu.Items.Add(_startup);
+        menu.Items.Add("Set up wireless DS3 (Bluetooth)...", null, (_, _) => SetupBluetooth());
+        menu.Items.Add("Pair a DS3 (plug it in by USB first)", null, (_, _) => PairDs3());
         menu.Items.Add("Open log folder", null, (_, _) => OpenLogFolder());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Exit", null, (_, _) => ExitThread());
@@ -146,6 +148,57 @@ public sealed class TrayApp : ApplicationContext
         _debug.Activate();
     }
 #endif
+
+    private bool _setupRunning;
+
+    private async void SetupBluetooth()
+    {
+        if (_setupRunning) return;
+        if (BluetoothSetup.IsInstalled())
+        {
+            MessageBox.Show("Wireless DS3 support (BthPS3) is already installed.\n\nPlug each DS3 in by USB, choose \"Pair a DS3\" in this menu, unplug it and press the PS button.",
+                "MaxiDodPS3", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+        var ok = MessageBox.Show(
+            "This sets up Bluetooth for DS3 pads.\n\n" +
+            "1. Windows makes a System Restore point first, so you can undo it.\n" +
+            "2. The official BthPS3 installer is downloaded from its own GitHub page.\n" +
+            "3. It is installed once you press Yes on the Windows admin prompt.\n\n" +
+            "BthPS3 sits on top of Windows' Bluetooth and does not replace your Bluetooth chip's driver.\n" +
+            "Your Bluetooth must be version 2.0 + EDR or newer. Continue?",
+            "MaxiDodPS3: wireless DS3", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+        if (ok != DialogResult.Yes) return;
+
+        _setupRunning = true;
+        try
+        {
+            string last = "";
+            int code = await BluetoothSetup.RunAsync(s =>
+            {
+                last = s;
+                Log.Info("BthPS3 setup: " + s);
+                _ui.BeginInvoke(() => _tray.ShowBalloonTip(4000, "MaxiDodPS3", s, ToolTipIcon.Info));
+            });
+            MessageBox.Show(last, "MaxiDodPS3: wireless DS3", MessageBoxButtons.OK,
+                code == 0 || code == 3010 ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
+        }
+        finally { _setupRunning = false; }
+    }
+
+    private void PairDs3()
+    {
+        if (!HostRadio.TryGetAddress(out var host, out _))
+        {
+            MessageBox.Show("No Bluetooth radio was found. Turn Bluetooth on first.", "MaxiDodPS3", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+        int n = Pairing.SetMasterOnAllUsbPads(_bridge.Config, host);
+        MessageBox.Show(n > 0
+            ? $"{n} DS3 pad(s) paired to this PC. Unplug them and press the PS button.\n\nWireless DS3 needs BthPS3 (menu: Set up wireless DS3)."
+            : "No DS3 pad was found on USB. Plug a DS3 in with a USB cable and try again.",
+            "MaxiDodPS3", MessageBoxButtons.OK, n > 0 ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
+    }
 
     private static void OpenLogFolder()
     {
